@@ -1,0 +1,57 @@
+body, html {
+  padding: 0;
+  margin: 0;
+}
+
+header, footer, aside, main, #box {
+  box-sizing: border-box;
+  text-transform: uppercase;
+  padding: 10px;
+  color: white;
+  font-size: 16px;
+  font-family: sans-serif;
+  vertical-align: middle;
+}
+
+header {
+  height: 150px;
+  background: red;
+}
+
+footer {
+  height: 600px;
+  background: green;
+}
+
+aside {
+  width: 30%;
+  float: left;
+  height: 1000px;
+  background: gold;
+}
+
+#box {
+  height: 100px;
+  background: blue;
+}
+
+main {
+  width: 70%;
+  float: left;
+  background: purple;
+  height: 500px;
+}
+
+.clearfix:after {
+     visibility: hidden;
+     display: block;
+     font-size: 0;
+     content: " ";
+     clear: both;
+     height: 0;
+     }
+.clearfix { display: inline-block; }
+/* start commented backslash hack \*/
+* html .clearfix { height: 1%; }
+.clearfix { display: block; }
+/* close commented backslash hack */
