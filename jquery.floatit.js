@@ -1,181 +1,237 @@
 (function ($) {
 	$.fn.floatit = function(params) {
-  	var $floater = this;
-    var $limiter = null;
-    var top_mod = 0;
-    var bottom_mod = 0;
-    var preserve_width = false;
-   	var bottom_limit_function = function(elem) {
-    	return $(elem).first().offset().top;
-    };
-    var recalculate = false;
+	  	var $floater = this;
+	    var $limiter = null;
+	    var $container = null;
+	    var top_mod = 0;
+	    var bottom_mod = 0;
+	    var $top_mod_elem = null;
+	    var preserve_width = false;
+	   	var bottomTopOffest = function(elem) {
+	    	return $(elem).first().offset().top;
+	    };
+	    var timeout = null;
+	    var recalculate = false;
 
-    params = params || {};
+	    if (!$floater.length) {
+	        return;
+	    }
 
-    if (params.hasOwnProperty('limiter')) {
-    	$limiter = $(params.limiter);
-    }
+	    if ($floater.outerHeight(true) >= $floater.parent().height()) {
+	        return;
+	    }
 
-    if (params.hasOwnProperty('top_spacing')) {
-    	top_mod = params.top_spacing;
-    }
+		if($floater.data('fltr')) {
+			return this;
+		}
 
-    if (params.hasOwnProperty('bottom_spacing')) {
-    	bottom_mod = params.bottom_spacing;
-    }
+	    params = params || {};
 
-    if (params.hasOwnProperty('preserve_width')) {
-    	preserve_width = params.preserve_width;
-    }
+	    if (params.hasOwnProperty('limiter')) {
+	    	$limiter = $(params.limiter);
+	    }
 
-    if (params.hasOwnProperty('limit_fn')) {
-    	bottom_limit_function = params.limit_fn;
-    }
+	    if (params.hasOwnProperty('top_spacing')) {
+	    	top_mod = params.top_spacing;
+	    }
 
-    if (params.hasOwnProperty('recalculate')) {
-    	recalculate = params.recalculate;
-    }
+	    if (params.hasOwnProperty('top_spacing_elem')) {
+	    	$top_mod_elem = $(params.top_spacing_elem);
+	    }
 
-    function fromTop($elem, top, limit, mod) {
-      if (top+mod >= limit) {
-        $elem.css({
-          'top': mod,
-          'position': 'fixed'
-        });
-      } else {
-        $elem.css({
-          'top': limit,
-          'position': 'absolute'
-        });
-      }
-    }
+	    if (params.hasOwnProperty('bottom_spacing')) {
+	    	bottom_mod = params.bottom_spacing;
+	    }
 
-    if ($floater.outerHeight(true) >= $floater.parent().height()) {
-    	return;
-    }
+	    if (params.hasOwnProperty('preserve_width')) {
+	    	preserve_width = params.preserve_width;
+	    }
 
-    if ($floater && $floater.length > 0) {
-    	$floater.addClass('floating');
+	    if (params.hasOwnProperty('limit_fn')) {
+	    	bottomTopOffest = params.limit_fn;
+	    }
 
-      var topLimit = null;
-      var bottomLimit = null;
-      var off = null;
-      var floater_h = null;
+	    if (params.hasOwnProperty('recalculate')) {
+	    	recalculate = params.recalculate;
+	    }
 
-      var calculateFloatInitials = function() {
-        off = $floater.offset();
-        floater_h = $floater.outerHeight(true);
-        topLimit = off.top;
-        $floater.data('fltr_offset', off);
-        $floater.data('fltr_parent', $floater.parent());
+	    if (params.hasOwnProperty('timeout')) {
+	    	timeout = params.timeout;
+	    }
 
-        var css = {
-          'top': off.top,
-          'left': off.left,
-          'position': 'absolute'
-        };
+	    if (params.hasOwnProperty('container')) {
+	    	$container = $(params.container);
+	    }
 
-        if (preserve_width) {
-          css.width = $floater.outerWidth();
-        }
+	    function fromTop($elem, top, limit, mod) {
+	        if (top + mod >= limit) {
+	            $elem.css({
+	                'top': mod,
+	                'position': 'fixed'
+	            });
+	        } else {
+	            $elem.css({
+	                'top': limit,
+	                'position': 'absolute'
+	            });
+	        }
+	    }
 
-        $floater.css(css);
+	    $floater.addClass('floating');
 
-        if ($limiter && $limiter.length > 0) {
-          bottomLimit = bottom_limit_function($limiter)-bottom_mod;
-        }
+	    var topLimit = null;
+	    var bottomLimit = null;
+	    var off = null;
+	    var floater_h = null;
 
-        $floater.detach();
-        $('body').append($floater);
-      };
+	    function updateInitialOffset() {
+	        off = $('#floater-dummy').offset();
+	        $floater.data('fltr_offset', off);
+	    }
 
-      calculateFloatInitials();
+	    var calculateFloatInitials = function() {
+	        off = $floater.offset();
+	        floater_h = $floater.outerHeight(true);
+	        topLimit = off.top;
+	        $floater.data('fltr_offset', off);
+	        $floater.data('fltr_parent', $floater.parent());
 
-      var onscroll = function () {
-      	if (!$floater.hasClass('floating')) {
-        	return;
-        }
+	        var css = {
+	            'top': off.top,
+	            'left': off.left,
+	            'position': 'absolute'
+	        };
 
-        var top = $(document).scrollTop();
-        fromTop($floater, top, off.top, top_mod);
-      };
+	        if (preserve_width) {
+	            css.width = $floater.outerWidth();
+	        }
 
-      if (bottomLimit && !recalculate) {
-        onscroll = function() {
-        	if (!$floater.hasClass('floating')) {
-            return;
-          }
+	        $floater.css(css);
 
-          var top = $(document).scrollTop();
-          var cp = top + floater_h  + top_mod;
+	        if ($limiter && $limiter.length) {
+	            bottomLimit = bottomTopOffest($limiter) - bottom_mod;
+	        }
 
-          if (cp >= bottomLimit) {
-            $floater.css({
-              'top': bottomLimit-floater_h,
-              'position': 'absolute'
-            });
-          } else {
-            fromTop($floater, top, off.top, top_mod);
-          }
-        };
-      }
+	        $floater.parent().append('<div id="floater-dummy" />');
 
-      if (bottomLimit && recalculate) {
-      	onscroll = function() {
-        	if (!$floater.hasClass('floating')) {
-            return;
-          }
-          var limit = bottom_limit_function($limiter)-bottom_mod;
-          var top = $(document).scrollTop();
-          var h = $floater.outerHeight(true);
-          var cp = top + h + top_mod;
+	        $floater.detach();
+	        if ($container) {
+	            $container.css('position', 'relartive').append($floater);
+	        } else {
+	            $('body').append($floater);
+	        }
 
-          if (cp >= limit) {
-            $floater.css({
-              'top': limit-h,
-              'position': 'absolute'
-            });
-          } else {
-            fromTop($floater, top, off.top, top_mod);
-          }
-        };
-      }
+	    };
 
-      var recalc = function () {
-      	if (!$floater.hasClass('floating')) {
-        	return;
-        }
+	    function topModCalc() {
+	        var tm = top_mod;
+	        if ($top_mod_elem) {
+	            tm = $top_mod_elem.outerHeight(true) + top_mod;
+	        }
 
-      	$floater.detach();
-        $($floater.data('fltr_parent')).append($floater);
-        $floater.attr('style', '');
+	        return tm;
+	    }
 
-        calculateFloatInitials();
-        onscroll();
-      };
+	    var onscroll = [];
 
-      if($floater.data('fltr')) {
-      	return this;
-      }
+	    onscroll[0] = function () {
+	        if (!$floater.hasClass('floating')) {
+	            return;
+	        }
+	        var top = $(document).scrollTop();
+	        var tm = topModCalc();
+	        fromTop($floater, top, off.top, tm);
+	    };
 
-      $(window).resize(recalc);
+	    onscroll[1] = function() {
+	    	if (!$floater.hasClass('floating')) {
+	            return;
+	        }
 
-      $(document).scroll(onscroll);
-      onscroll();
+	        var tm = topModCalc();
+	        var top = $(document).scrollTop();
+	        var cp = top + floater_h  + tm;
 
-      $floater.data('fltr', true);
-    }
+	          if (cp >= bottomLimit) {
+	            $floater.css({
+	              'top': bottomLimit-floater_h,
+	              'position': 'absolute'
+	            });
+	          } else {
+	            fromTop($floater, top, off.top, tm);
+	          }
+	    };
 
-    return this;
-  };
+	    onscroll[2] = function() {
+		    if (!$floater.hasClass('floating')) {
+	            return;
+	        }
 
-  $.fn.sinkit = function(params) {
-  	var $floater = this;
-  	$floater.removeClass('floating');
-    $floater.detach();
-    $($floater.data('fltr_parent')).append($floater);
-    $floater.attr('style', '');
+	        if ($top_mod_elem.length) {
+	            updateInitialOffset();
+	        }
 
-    return this;
-  };
+	        var limit = bottomTopOffest($limiter) - bottom_mod;
+	        var top = $(document).scrollTop();
+	        var h = $floater.outerHeight(true);
+
+	        var tm = topModCalc();
+	        var cp = top + h + tm;
+
+	        if (cp >= limit) {
+	            $floater.css({
+	                'top': limit - h,
+	                'position': 'absolute'
+	            });
+	        } else {
+	            fromTop($floater, top, off.top, tm);
+	        }
+	    };
+
+	    var recalc = function () {
+	        if (!$floater.hasClass('floating')) {
+	            return;
+	        }
+
+	  	     $floater.detach();
+	         $($floater.data('fltr_parent')).append($floater);
+	         $floater.attr('style', '');
+
+	         calculateFloatInitials();
+	         onscroll();
+	  	};
+
+	  	function __init__() {
+	      	calculateFloatInitials();
+
+	      	$(window).resize(recalc);
+
+	      	var scroll_fn_id = 0;
+	      	if (bottomLimit) {
+	          	scroll_fn_id = recalculate ? 2 : 1;
+	      	}
+	      	$(document).scroll(onscroll[scroll_fn_id]);
+	      	onscroll[scroll_fn_id]();
+	  	}
+
+	  	if (timeout) {
+	    	setTimeout(__init__, timeout);
+	  	} else {
+	      __init__();
+	  	}
+
+		return this;
+	};
+
+  	$.fn.sinkit = function(params) {
+  		var $floater = this;
+  		$floater.removeClass('floating');
+    	$floater.detach();
+		$('#floatit-dummy').remove();
+	    $floater.data('fltr', false);
+    	$($floater.data('fltr_parent')).append($floater);
+    	$floater.attr('style', '');
+
+    	return this;
+  	};
 })(jQuery);
