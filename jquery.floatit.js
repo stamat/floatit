@@ -193,12 +193,16 @@
 	            return;
 	        }
 
-	  	     $floater.detach();
-	         $($floater.data('fltr_parent')).append($floater);
-	         $floater.attr('style', '');
+	  	    $floater.detach();
+	        $($floater.data('fltr_parent')).append($floater);
+	        $floater.attr('style', '');
 
-	         calculateFloatInitials();
-	         onscroll();
+	        calculateFloatInitials();
+			var scroll_fn_id = 0;
+            	if (bottomLimit) {
+                	scroll_fn_id = recalculate ? 2 : 1;
+            	}
+			onscroll[scroll_fn_id]();
 	  	};
 
 	  	function __init__() {
